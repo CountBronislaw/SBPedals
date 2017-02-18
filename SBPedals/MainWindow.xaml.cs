@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+ * SBPedals
+ * Author: Travis Carney
+ * 
+ * This program reads serial data from an Arduino that is connected to a pedal set from the Steel Battalion controller.
+ * When pedals are depressed, this program will send simulated keystrokes to the currently focused application.
+ * 
+ * Uses the InputSimulator library found here: https://inputsimulator.codeplex.com/
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,18 +32,24 @@ namespace SBPedals
     {
         private SerialScanner ss;       // SerialScanner object that is used to get data from the Arduino.
         private Thread serialThread;    // Thread in which the SerialScanner will read the Arduino serial port.
+        private String prevGasKey;
 
+        // These statements allow for a P/Invoke of the VkKeyScan() function to convert a character into a VirtualKeyCode
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern short VkKeyScan(char ch);
         /*
          * Create the SerialScanner object and start executing the StartRead method in a new thread.
          */
         public MainWindow()
         {
             InitializeComponent();
+            this.prevGasKey = "A";
             this.ss = new SBPedals.SerialScanner(txtSerial, txtGas, txtBrake, txtClutch);
             this.serialThread = new Thread(new ThreadStart(ss.StartRead));
 
             // Start the thread and wait for the thread to be closed before exiting.
             this.serialThread.Start();
+            this.txtGasKey.Text = this.prevGasKey;
             while (!this.serialThread.IsAlive);
         }
 
@@ -51,194 +66,82 @@ namespace SBPedals
             ss.Close();
             Console.WriteLine("Shutting down");
         }
-    }
-
-    /*
-     * The SerialScanner class handles reading the serial data from the Arduino, parsing it, and then deciding which keys to send.
-     */
-    public class SerialScanner
-    {
-        private volatile bool running;      // Flag used to determine when to stop the thread.
-        private String portName;            // Arduino COM port.
-        private int baudRate;               // Arduino COM port baud rate.
-        private SerialPort serialPort;      // SerialPort object instantiated based off of portName and baudRate.
-        private TextBox serialDisplay;      // Textbox reference for the serial data.
-        private TextBox gas;                // Textbox reference for the gas pedal data.
-        private TextBox brake;              // Textbox reference for the brake pedal data.
-        private TextBox clutch;             // Textbox reference for the clutch pedal data.
-        private int gasThreshold;           // Minimum value that must be attained to initiate a key down event for the gas pedal.
-        private int brakeThreshold;         // Minimum value that must be attained to initiate a key down event for the brake pedal.
-        private int clutchTreshold;         // Minimum value that must be attained to initiate a key down event for the clutch pedal.
-        private Boolean gasDown;            // Is true when the key down event is sent for the gas pedal.
-        private Boolean brakeDown;          // Is true when the key down event is sent for the brake pedal.
-        private Boolean clutchDown;         // Is true when the key down event is sent for the clutch pedal.
-        private WindowsInput.VirtualKeyCode gasKey = WindowsInput.VirtualKeyCode.NUMPAD6;       // Key to send for the gas pedal.
-        private WindowsInput.VirtualKeyCode brakeKey = WindowsInput.VirtualKeyCode.VK_V;        // Key to send for the brake pedal.
-        private WindowsInput.VirtualKeyCode clutchKey = WindowsInput.VirtualKeyCode.NUMPAD8;    // Key to send for the clutch pedal.
-
-        public SerialScanner(TextBox serial, TextBox gas, TextBox brake, TextBox clutch)
-        {
-            this.serialDisplay = serial;
-            this.gas = gas;
-            this.brake = brake;
-            this.clutch = clutch;
-            this.gasThreshold = 300;
-            this.brakeThreshold = 300;
-            this.clutchTreshold = 300;
-        }
 
         /*
-         * Set the baud rate, COM port, and create the SerialPort object. Open the port and set the running flag to true.
+         * This method is a P/Invoke of user32.dll's VkKeyScan() function. It allows me to pass in a character and get the 
+         * WindowsInput.VirtualKeyCode constant I need to change the gas, brake, and pedal keys.
+         * 
+         * This method will not work properly on numpad keys or any other special keys.
+         * 
+         * Code borrowed from Stack Overflow: http://stackoverflow.com/questions/2898806/how-to-convert-a-character-to-key-code
          */
-        private void SetupSerialCom()
+        public static WindowsInput.VirtualKeyCode ConvertCharToVirtualKey(char ch)
         {
-            this.portName = "COM9";     // Hardcoded for now, should make into a variable.
-            this.baudRate = 115200;       // This is set in the Arduino sketch
-
-            // Create a SerialPort object based on the port and baud rate and open it.
-            this.serialPort = new SerialPort(portName);
-            this.serialPort.BaudRate = this.baudRate;
-            this.serialPort.ReadTimeout = 1000;
-            this.serialPort.Open();
-
-            this.running = true;
+            WindowsInput.VirtualKeyCode newKey;
+            short vkey = VkKeyScan(ch);
+            newKey = (WindowsInput.VirtualKeyCode)(vkey & 0xff);
+            /* The following is code from the Stack Overflow example I looked at.
+            int modifiers = vkey >> 8;
+            if ((modifiers & 1) != 0) retval |= Keys.Shift;
+            if ((modifiers & 2) != 0) retval |= Keys.Control;
+            if ((modifiers & 4) != 0) retval |= Keys.Alt;
+            */
+            return newKey;
         }
 
         /*
-         * This method is called when the window is closed. It simply closes the serial port.
+         * Check the key to see if it is an invalid key, such as space. Return true if the key is valid, otherwise return false.
+         */
+        private static Boolean CheckKey(Key key)
+        {
+        if (key == Key.Space)
+            return false;
+
+        return true;
+        }
+
+        /*
+         * Take the text value of the key and set the textbox text.
+         */
+        private void txtGasKey_KeyDown(object sender, KeyEventArgs e)
+        {
+            txtGasKey.Text = e.Key.ToString();
+        }
+
+        /*
+         * When the gas key textbox changes, check if the string is of length 1. If it is, convert the string to a character 
+         * and then convert that character to a WindowsInput.VirtualKeyCode constant. Change the gas pedal key with the setGasKey() method.
+         */
+        private void txtGasKey_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            String txt = txtGasKey.Text;
+            Console.WriteLine(txt);
+
+            // Don't convert the key if the string is empty - it will crash.
+            if (txt.Length == 1)
+            {
+                prevGasKey = txt;
+                char ch = txt.ToCharArray()[0];
+                WindowsInput.VirtualKeyCode newKey = ConvertCharToVirtualKey(ch);
+                Console.WriteLine(ch);
+                this.ss.setGasKey(newKey);
+            }
+            else
+            {
+                txtGasKey.Text = prevGasKey;
+            }
+        }
+
+        /*
+        * Before setting the gas key, check if the key is valid.
         */
-        public void Close()
+        private void txtGasKey_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            this.serialPort.Close();
-        }
-
-        /*
-         * This method is where the serial port is first created and opened and the data is read/parsed.
-        */
-        public void StartRead()
-        {
-            this.SetupSerialCom();
-            String data = "";
-            String[] pedalVals = new String[3];
-            this.serialPort.DiscardInBuffer();           // This helps with preventing an exception on startup of the serial read loop
-
-            // The main read loop
-            while (running)
+            // If the key is invalid, ignore the event (handled = true)
+            if (!CheckKey(e.Key))
             {
-                try
-                {
-                    // Read the data and parse it into the pedalVals array
-                    data = this.serialPort.ReadLine();
-                    pedalVals = ParseSerialData(data);
-
-                    Console.WriteLine(data);
-
-                    // This dispatcher will notify the UI thread of the new values.
-                    Application.Current.Dispatcher.Invoke( () => {
-                        serialDisplay.Text = data;
-                        if (pedalVals.Length == 3)
-                        {
-                            gas.Text = pedalVals[0];
-                            brake.Text = pedalVals[1];
-                            clutch.Text = pedalVals[2];
-                        }
-                    } ); 
-
-                    // Only evaluate the pedals (send keys) if the array has a value for each pedal.
-                    if (pedalVals.Length == 3)
-                    {
-                        EvaluatePedals(pedalVals);
-                    }
-
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-            }
-
-        }
-
-        /*
-         * This method is called when the window is closed and it sets the volatile running flag to false, stopping the loop
-         * when it begins a new iteration.
-         */
-        public void SetRunning(Boolean run)
-        {
-            this.running = run;
-        }
-        
-        /*
-         * The serial data coming from the Arduino is a semicolon delimited string that should contain three values.
-         * If the string contains any more or less than three values, something went wrong.
-         * Index 0 = gas value
-         * Index 1 = brake value
-         * Index 2 = clutch value
-         */ 
-        private static String[] ParseSerialData(String data)
-        {
-            String[] values;
-
-            values = data.Trim().Split( ';' );
-
-            return values;
-        }
-
-        /*
-         * The gas, brake, and clutch pedal values are compared to their threshold settings to determine if a key up or down event should be sent.
-         */
-        private void EvaluatePedals(String[] pedalVals)
-        {
-            int[] vals = Array.ConvertAll(pedalVals, int.Parse);
-            int gas = vals[0];
-            int brake = vals[1];
-            int clutch = vals[2];
-
-            // Gas check. If the threshold is met, send the key down event and set the gasDown flag to true.
-            if (gas >= this.gasThreshold)
-            {
-                InputSimulator.SimulateKeyDown(gasKey);
-                gasDown = true;
-            }
-            // Send the key up event when the threshold is no longer met and the gasDown flag is true.
-            else
-            {
-                if (gasDown)
-                {
-                    InputSimulator.SimulateKeyUp(gasKey);
-                    gasDown = false;
-                }
-            }
-
-            // Brake check. If the threshold is met, send the key down event and set the brakeDown flag to true.
-            if (brake >= this.brakeThreshold)
-            {
-                InputSimulator.SimulateKeyDown(brakeKey);
-                brakeDown = true;
-            }
-            // Send the key up event when the threshold is no longer met and the brakeDown flag is true.
-            else
-            {
-                if (brakeDown)
-                {
-                    InputSimulator.SimulateKeyUp(brakeKey);
-                    brakeDown = false;
-                }
-            }
-
-            // Clutch check. If the threshold is met, send the key down event and set the clutchDown flag to true.
-            if (clutch >= this.clutchTreshold)
-            {
-                InputSimulator.SimulateKeyDown(clutchKey);
-                clutchDown = true;
-            }
-            // Send the key up event when the threshold is no longer met and the clutchDown flag is true.
-            else
-            {
-                if (clutchDown)
-                {
-                    InputSimulator.SimulateKeyUp(clutchKey);
-                }
+                Console.WriteLine("ignored");
+                e.Handled = true;
             }
         }
     }
