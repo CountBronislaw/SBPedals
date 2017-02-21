@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+* The SerialScanner class handles reading the serial data from the Arduino, parsing it, and then deciding which keys to send.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -10,9 +14,6 @@ using WindowsInput;
 
 namespace SBPedals
 {
-    /*
-    * The SerialScanner class handles reading the serial data from the Arduino, parsing it, and then deciding which keys to send.
-    */
     public class SerialScanner
     {
         private volatile bool running;      // Flag used to determine when to stop the thread.
@@ -42,6 +43,9 @@ namespace SBPedals
             this.gasThreshold = 300;
             this.brakeThreshold = 300;
             this.clutchTreshold = 300;
+            this.gasDown = false;
+            this.brakeDown = false;
+            this.clutchDown = false;
         }
 
         /*
@@ -153,6 +157,8 @@ namespace SBPedals
                 InputSimulator.SimulateKeyUp(brakeKey);
                 brakeDown = false;
             }
+
+            this.brakeKey = newKey;
         }
 
         /*
@@ -166,6 +172,8 @@ namespace SBPedals
                 InputSimulator.SimulateKeyUp(clutchKey);
                 clutchDown = false;
             }
+
+            this.clutchKey = newKey;
         }
 
         /*
@@ -194,51 +202,60 @@ namespace SBPedals
             int brake = vals[1];
             int clutch = vals[2];
 
-            // Gas check. If the threshold is met, send the key down event and set the gasDown flag to true.
-            if (gas >= this.gasThreshold)
+            try
             {
-                InputSimulator.SimulateKeyDown(gasKey);
-                gasDown = true;
-            }
-            // Send the key up event when the threshold is no longer met and the gasDown flag is true.
-            else
-            {
-                if (gasDown)
+                // Gas check. If the threshold is met, send the key down event and set the gasDown flag to true.
+                if (gas >= this.gasThreshold && !gasDown)
                 {
-                    InputSimulator.SimulateKeyUp(gasKey);
-                    gasDown = false;
+                    InputSimulator.SimulateKeyDown(gasKey);
+                    gasDown = true;
                 }
-            }
+                // Send the key up event when the threshold is no longer met and the gasDown flag is true.
+                else
+                {
+                    if (gasDown)
+                    {
+                        InputSimulator.SimulateKeyUp(gasKey);
+                        gasDown = false;
+                    }
+                }
 
-            // Brake check. If the threshold is met, send the key down event and set the brakeDown flag to true.
-            if (brake >= this.brakeThreshold)
-            {
-                InputSimulator.SimulateKeyDown(brakeKey);
-                brakeDown = true;
-            }
-            // Send the key up event when the threshold is no longer met and the brakeDown flag is true.
-            else
-            {
-                if (brakeDown)
+                // Brake check. If the threshold is met, send the key down event and set the brakeDown flag to true.
+                if (brake >= this.brakeThreshold && !brakeDown)
                 {
-                    InputSimulator.SimulateKeyUp(brakeKey);
-                    brakeDown = false;
+                    InputSimulator.SimulateKeyDown(brakeKey);
+                    brakeDown = true;
                 }
-            }
+                // Send the key up event when the threshold is no longer met and the brakeDown flag is true.
+                else
+                {
+                    if (brakeDown)
+                    {
+                        InputSimulator.SimulateKeyUp(brakeKey);
+                        brakeDown = false;
+                    }
+                }
 
-            // Clutch check. If the threshold is met, send the key down event and set the clutchDown flag to true.
-            if (clutch >= this.clutchTreshold)
-            {
-                InputSimulator.SimulateKeyDown(clutchKey);
-                clutchDown = true;
-            }
-            // Send the key up event when the threshold is no longer met and the clutchDown flag is true.
-            else
-            {
-                if (clutchDown)
+                // Clutch check. If the threshold is met, send the key down event and set the clutchDown flag to true.
+                if (clutch >= this.clutchTreshold && !clutchDown)
                 {
-                    InputSimulator.SimulateKeyUp(clutchKey);
+                    InputSimulator.SimulateKeyDown(clutchKey);
+                    clutchDown = true;
                 }
+                // Send the key up event when the threshold is no longer met and the clutchDown flag is true.
+                else
+                {
+                    if (clutchDown)
+                    {
+                        InputSimulator.SimulateKeyUp(clutchKey);
+                    }
+                }
+            }
+            // Log the exception to the console for now.
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                UpAllKeys();
             }
         }
 

@@ -1,12 +1,12 @@
 ﻿/*
  * SBPedals
- * Author: Travis Carney
  * 
  * This program reads serial data from an Arduino that is connected to a pedal set from the Steel Battalion controller.
  * When pedals are depressed, this program will send simulated keystrokes to the currently focused application.
  * 
  * Uses the InputSimulator library found here: https://inputsimulator.codeplex.com/
  */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +37,7 @@ namespace SBPedals
         // These statements allow for a P/Invoke of the VkKeyScan() function to convert a character into a VirtualKeyCode
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern short VkKeyScan(char ch);
+
         /*
          * Create the SerialScanner object and start executing the StartRead method in a new thread.
          */
@@ -49,7 +50,7 @@ namespace SBPedals
 
             // Start the thread and wait for the thread to be closed before exiting.
             this.serialThread.Start();
-            this.txtGasKey.Text = this.prevGasKey;
+           // this.txtGasKey.Text = this.prevGasKey;
             while (!this.serialThread.IsAlive);
         }
 
@@ -138,6 +139,8 @@ namespace SBPedals
         private void txtGasKey_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             // If the key is invalid, ignore the event (handled = true)
+            KeyMap.LookupVKey(e.Key);
+
             if (!CheckKey(e.Key))
             {
                 Console.WriteLine("ignored");
