@@ -30,9 +30,9 @@ namespace SBPedals
         private Boolean gasDown;            // Is true when the key down event is sent for the gas pedal.
         private Boolean brakeDown;          // Is true when the key down event is sent for the brake pedal.
         private Boolean clutchDown;         // Is true when the key down event is sent for the clutch pedal.
-        private WindowsInput.VirtualKeyCode gasKey = WindowsInput.VirtualKeyCode.NUMPAD6;       // Key to send for the gas pedal.
-        private WindowsInput.VirtualKeyCode brakeKey = WindowsInput.VirtualKeyCode.VK_V;        // Key to send for the brake pedal.
-        private WindowsInput.VirtualKeyCode clutchKey = WindowsInput.VirtualKeyCode.NUMPAD8;    // Key to send for the clutch pedal.
+        private WindowsInput.VirtualKeyCode gasKey = WindowsInput.VirtualKeyCode.VK_D;       // Key to send for the gas pedal.
+        private WindowsInput.VirtualKeyCode brakeKey = WindowsInput.VirtualKeyCode.VK_A;        // Key to send for the brake pedal.
+        private WindowsInput.VirtualKeyCode clutchKey = WindowsInput.VirtualKeyCode.VK_A;    // Key to send for the clutch pedal.
 
         public SerialScanner(TextBox serial, TextBox gas, TextBox brake, TextBox clutch)
         {
