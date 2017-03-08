@@ -31,7 +31,7 @@ namespace SBPedals
         private Boolean brakeDown;          // Is true when the key down event is sent for the brake pedal.
         private Boolean clutchDown;         // Is true when the key down event is sent for the clutch pedal.
         private WindowsInput.VirtualKeyCode gasKey = WindowsInput.VirtualKeyCode.VK_D;       // Key to send for the gas pedal.
-        private WindowsInput.VirtualKeyCode brakeKey = WindowsInput.VirtualKeyCode.VK_A;        // Key to send for the brake pedal.
+        private WindowsInput.VirtualKeyCode brakeKey = WindowsInput.VirtualKeyCode.VK_A;     // Key to send for the brake pedal.
         private WindowsInput.VirtualKeyCode clutchKey = WindowsInput.VirtualKeyCode.VK_A;    // Key to send for the clutch pedal.
 
         public SerialScanner(TextBox serial, TextBox gas, TextBox brake, TextBox clutch)
@@ -50,11 +50,13 @@ namespace SBPedals
 
         /*
          * Set the baud rate, COM port, and create the SerialPort object. Open the port and set the running flag to true.
+         * 
+         * ADD SERIAL PORT STRING ARG TO ALLOW FOR DIFFERENT COM PORTS
          */
-        private void SetupSerialCom()
+        private void SetupSerialCom(string port)
         {
-            this.portName = "COM9";     // Hardcoded for now, should make into a variable.
-            this.baudRate = 115200;       // This is set in the Arduino sketch
+            this.portName = port;     // Hardcoded for now, should make into a variable.
+            this.baudRate = 115200;     // This is set in the Arduino sketch
 
             // Create a SerialPort object based on the port and baud rate and open it.
             this.serialPort = new SerialPort(portName);
@@ -63,6 +65,8 @@ namespace SBPedals
             this.serialPort.Open();
 
             this.running = true;
+
+            PrintSerialPorts();
         }
 
         /*
@@ -75,10 +79,12 @@ namespace SBPedals
 
         /*
          * This method is where the serial port is first created and opened and the data is read/parsed.
+         * 
+         * ADD SERIAL PORT STRING ARG TO ALLOW FOR DIFFERENT COM PORTS
         */
-        public void StartRead()
+        public void StartRead(string port) 
         {
-            this.SetupSerialCom();
+            this.SetupSerialCom(port);
             String data = "";
             String[] pedalVals = new String[3];
             this.serialPort.DiscardInBuffer();           // This helps with preventing an exception on startup of the serial read loop
@@ -91,8 +97,6 @@ namespace SBPedals
                     // Read the data and parse it into the pedalVals array
                     data = this.serialPort.ReadLine();
                     pedalVals = ParseSerialData(data);
-
-                    //Console.WriteLine(data);
 
                     // This dispatcher will notify the UI thread of the new values.
                     Application.Current.Dispatcher.Invoke(() => {
@@ -111,6 +115,14 @@ namespace SBPedals
                         EvaluatePedals(pedalVals);
                     }
 
+                }
+                catch(TimeoutException to)
+                {
+                    this.running = false;
+                    this.UpAllKeys();
+                    this.Close();
+
+                    MessageBox.Show(to.Message);
                 }
                 catch (Exception e)
                 {
@@ -134,7 +146,7 @@ namespace SBPedals
         /*
          * This method is called when the user changes the gas key textbox. It simply changes which key value is sent.
          */
-        public void setGasKey(WindowsInput.VirtualKeyCode newKey)
+        public void SetGasKey(WindowsInput.VirtualKeyCode newKey)
         {
             // Be sure to reset the key if it is down.
             if (gasDown)
@@ -149,7 +161,7 @@ namespace SBPedals
         /*
          * This method is called when the user changes the brake key textbox. It simply changes which key value is sent.
          */
-        public void setBrakeKey(WindowsInput.VirtualKeyCode newKey)
+        public void SetBrakeKey(WindowsInput.VirtualKeyCode newKey)
         {
             // Be sure to reset the key if it is down.
             if (brakeDown)
@@ -164,7 +176,7 @@ namespace SBPedals
         /*
          * This method is called when the user changes the clutch key textbox. It simply changes which key value is sent.
         */
-        public void setClutchKey(WindowsInput.VirtualKeyCode newKey)
+        public void SetClutchKey(WindowsInput.VirtualKeyCode newKey)
         {
             // Be sure to reset the key if it is down.
             if (clutchDown)
@@ -248,6 +260,7 @@ namespace SBPedals
                     if (clutchDown)
                     {
                         InputSimulator.SimulateKeyUp(clutchKey);
+                        clutchDown = false;
                     }
                 }
             }
@@ -268,6 +281,25 @@ namespace SBPedals
             InputSimulator.SimulateKeyUp(gasKey);
             InputSimulator.SimulateKeyUp(brakeKey);
             InputSimulator.SimulateKeyUp(clutchKey);
+
+            gasDown = false;
+            brakeDown = false;
+            clutchDown = false;
+        }
+
+        /*
+         * This method is for testing purposes. It simply prints all found ports on the system.
+         */
+        private void PrintSerialPorts()
+        {
+            string[] ports = SerialPort.GetPortNames();
+
+            Console.WriteLine("The following ports were found:");
+
+            foreach (string port in ports)
+            {
+                Console.WriteLine(port);
+            }
         }
     }
 }

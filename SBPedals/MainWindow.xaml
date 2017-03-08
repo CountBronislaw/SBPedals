@@ -5,9 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SBPedals"
         mc:Ignorable="d"
-        Title="SBPedals" Height="256.303" Width="332.081" ResizeMode="CanMinimize"
+        Title="Steel Battalion Pedals Controller" Height="264.057" Width="426.848" ResizeMode="CanMinimize"
         Closing="Window_Closing">
-    <Grid>
+    <Grid HorizontalAlignment="Left" Width="504">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="31*"/>
+            <ColumnDefinition Width="53*"/>
+        </Grid.ColumnDefinitions>
         <TextBox x:Name="txtGas" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnly="True" Margin="10,86,0,0"/>
         <Label x:Name="lblGas" Content="Gas Value" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,60,0,0"/>
         <TextBox x:Name="txtBrake" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnly="True" Margin="10,135,0,0"/>
@@ -16,12 +20,15 @@
         <TextBox x:Name="txtClutch" HorizontalAlignment="Left" Height="23" Margin="10,184,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
         <Label x:Name="lblSerial" Content="Serial Data" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0"/>
         <TextBox x:Name="txtSerial" HorizontalAlignment="Left" Height="23" Margin="10,36,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <TextBox x:Name="txtGasKey" HorizontalAlignment="Left" Height="23" Margin="186,86,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Cursor="Arrow" MaxLength="1" KeyDown="txtGasKey_KeyDown" PreviewKeyDown="txtGasKey_PreviewKeyDown"/>
-        <Label x:Name="lblGasKey" Content="Gas Key" HorizontalAlignment="Left" Margin="186,60,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="txtBrakeKey" HorizontalAlignment="Left" Height="23" Margin="186,135,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Cursor="Arrow"/>
-        <Label x:Name="lblBrakeKey" Content="Brake Key" HorizontalAlignment="Left" Margin="186,109,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="textBox_Copy1" HorizontalAlignment="Left" Height="23" Margin="186,184,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Cursor="Arrow"/>
-        <Label x:Name="lblClutchKey" Content="Clutch Key" HorizontalAlignment="Left" Margin="186,158,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="txtGasKey" HorizontalAlignment="Left" Height="23" Margin="186,86,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Cursor="Arrow" MaxLength="1" KeyDown="txtGasKey_KeyDown" PreviewKeyDown="txtGasKey_PreviewKeyDown" Grid.ColumnSpan="2"/>
+        <Label x:Name="lblGasKey" Content="Gas Key" HorizontalAlignment="Left" Margin="186,60,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <TextBox x:Name="txtBrakeKey" HorizontalAlignment="Left" Height="23" Margin="186,135,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Cursor="Arrow" KeyDown="txtBrakeKey_KeyDown" PreviewKeyDown="txtBrakeKey_PreviewKeyDown" MaxLength="1" Grid.ColumnSpan="2"/>
+        <Label x:Name="lblBrakeKey" Content="Brake Key" HorizontalAlignment="Left" Margin="186,109,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <TextBox x:Name="txtClutchKey" HorizontalAlignment="Left" Height="23" Margin="186,184,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Cursor="Arrow" MaxLength="1" PreviewKeyDown="txtClutchKey_PreviewKeyDown" KeyDown="txtClutchKey_KeyDown" Grid.ColumnSpan="2"/>
+        <Label x:Name="lblClutchKey" Content="Clutch Key" HorizontalAlignment="Left" Margin="186,158,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <ComboBox x:Name="cmbPorts" HorizontalAlignment="Left" Margin="0,36,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="comboBox_SelectionChanged" Grid.Column="1"/>
+        <Label x:Name="lblComPort" Content="COM Port" HorizontalAlignment="Left" Margin="0,10,0,0" VerticalAlignment="Top" Grid.Column="1"/>
+        <Button x:Name="btnRefresh" Content="Refresh Ports" HorizontalAlignment="Left" Margin="139,36,0,0" VerticalAlignment="Top" Width="75" Grid.Column="1" Click="btnRefresh_Click"/>
 
     </Grid>
 </Window>

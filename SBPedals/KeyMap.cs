@@ -75,6 +75,9 @@ namespace SBPedals
             lookup.Add(System.Windows.Input.Key.D8, WindowsInput.VirtualKeyCode.VK_8);
             lookup.Add(System.Windows.Input.Key.D9, WindowsInput.VirtualKeyCode.VK_9);
 
+            // Non-alphanumeric keys
+            lookup.Add(System.Windows.Input.Key.OemPeriod, WindowsInput.VirtualKeyCode.OEM_PERIOD);
+
             // Numpad keys
             lookup.Add(System.Windows.Input.Key.NumPad0, WindowsInput.VirtualKeyCode.NUMPAD0);
             lookup.Add(System.Windows.Input.Key.NumPad1, WindowsInput.VirtualKeyCode.NUMPAD1);

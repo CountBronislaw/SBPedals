@@ -39,13 +39,12 @@ namespace SBPedals
         public MainWindow()
         {
             InitializeComponent();
+            AddComPorts();
             this.ss = new SBPedals.SerialScanner(txtSerial, txtGas, txtBrake, txtClutch);
-            this.serialThread = new Thread(new ThreadStart(ss.StartRead));
+            this.serialThread = new Thread(() => ss.StartRead("COM9"));
 
-            // Start the thread and wait for the thread to be closed before exiting.
+            // Start the thread
             this.serialThread.Start();
-           // this.txtGasKey.Text = this.prevGasKey;
-            while (!this.serialThread.IsAlive);
         }
 
         /*
@@ -68,8 +67,8 @@ namespace SBPedals
         private void txtGasKey_KeyDown(object sender, KeyEventArgs e)
         {
             VirtualKeyCode newKey = KeyMap.LookupVKey(e.Key);
-            txtGasKey.Text = newKey.ToString();
-            this.ss.setGasKey(newKey);
+            txtGasKey.Text = e.Key.ToString();
+            this.ss.SetGasKey(newKey);
         }
 
         /*
@@ -77,16 +76,95 @@ namespace SBPedals
         */
         private void txtGasKey_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            e.Handled = FilterKey(e.Key);
+        }
+
+        /*
+        * Take the text value of the key and set the textbox text.
+        */
+        private void txtBrakeKey_KeyDown(object sender, KeyEventArgs e)
+        {
+            VirtualKeyCode newKey = KeyMap.LookupVKey(e.Key);
+            txtBrakeKey.Text = e.Key.ToString();
+            this.ss.SetBrakeKey(newKey);
+        }
+
+        /*
+        * Before setting the brake key, check if the key is valid.
+        */
+        private void txtBrakeKey_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            e.Handled = FilterKey(e.Key);
+        }
+
+        /*
+        * Before setting the brake key, check if the key is valid.
+        */
+        private void txtClutchKey_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            e.Handled = FilterKey(e.Key);
+        }
+
+        /*
+        * Take the text value of the key and set the textbox text.
+        */
+        private void txtClutchKey_KeyDown(object sender, KeyEventArgs e)
+        {
+            VirtualKeyCode newKey = KeyMap.LookupVKey(e.Key);
+            txtClutchKey.Text = e.Key.ToString();
+            this.ss.SetClutchKey(newKey);
+        }
+
+        /*
+         * This method checks the passed in key to see if it is invalid. If it invalid, true is returned. Otherwise, false is returned.
+         * The PreviewKeyDown events will set e.Handled to the returned value to filter out invalid key strokes. 
+         */
+        private bool FilterKey(System.Windows.Input.Key pressedKey)
+        {
+            bool invalid = false;
+
             // If the key was not found and is equal to 0, ignore the event
-            if (KeyMap.LookupVKey(e.Key) == 0)
-                e.Handled = true;
+            if (KeyMap.LookupVKey(pressedKey) == 0)
+                invalid = true;
 
             // If the key is invalid, ignore the event (handled = true)
-            if (!KeyMap.CheckKey(e.Key))
+            if (!KeyMap.CheckKey(pressedKey))
             {
                 Console.WriteLine("ignored");
-                e.Handled = true;
+                invalid = true;
             }
+
+            return invalid;
+        }
+
+        private void comboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ChangePort(cmbPorts.SelectedItem.ToString());
+            Console.WriteLine(cmbPorts.SelectedItem.ToString());
+        }
+        
+        private void AddComPorts()
+        {
+            string[] ports = SerialPort.GetPortNames();
+
+            foreach (string port in ports)
+            {
+                cmbPorts.Items.Add(port);
+            }
+        }
+
+        private void btnRefresh_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ChangePort(string port)
+        {
+            this.ss.SetRunning(false);
+            Thread.Sleep(100);
+            this.ss.Close();
+            Thread.Sleep(100);
+            this.ss.StartRead(port);
         }
     }
 }
